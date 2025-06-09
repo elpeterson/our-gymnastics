@@ -37,4 +37,4 @@ jobs:
           # Change 2: Specify the path to the Dockerfile
           file: ./server/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/our-gymnastics-server:latest
+          tags: ghcr.io/${{ github.repository_owner }}/our-gymnastics:latest
