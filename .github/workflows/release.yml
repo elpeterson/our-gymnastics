@@ -1,0 +1,32 @@
+name: Create Release
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # to create release (and write 'package.json')
+      issues: write # to post comments on issues/PRs
+      pull-requests: write # to post comments on issues/PRs
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          # This is required to analyze the full commit history
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run semantic-release
+        run: npx semantic-release-monorepo
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
