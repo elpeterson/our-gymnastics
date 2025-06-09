@@ -5,31 +5,40 @@ on:
     branches: [ "main" ]
 
 jobs:
-  release:
+  release-client:
     runs-on: ubuntu-latest
+    # This job only runs if changes were made in the 'client' directory
+    if: "contains(github.event.head_commit.message, 'feat(client)') || contains(github.event.head_commit.message, 'fix(client)')"
     permissions:
       contents: write
       issues: write
       pull-requests: write
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v3
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v3
+        with: { node-version: '20' }
+      - run: npm ci
+      - run: npx semantic-release
+        working-directory: ./client
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          # This is the line to change from '18' to '20'
-          node-version: '20'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Verify Installation
-        run: ls -la ./node_modules/.bin
-
-      - name: Run semantic-release
-        run: ./node_modules/.bin/semantic-release
+  release-server:
+    runs-on: ubuntu-latest
+    # This job only runs if changes were made in the 'server' directory
+    if: "contains(github.event.head_commit.message, 'feat(server)') || contains(github.event.head_commit.message, 'fix(server)')"
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v3
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v3
+        with: { node-version: '20' }
+      - run: npm ci
+      - run: npx semantic-release
+        working-directory: ./server
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
