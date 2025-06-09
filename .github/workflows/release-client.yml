@@ -1,0 +1,43 @@
+name: Create Client GitHub Release
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'client/**'
+      - '.github/workflows/release-client.yml'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      # This permission is required to create a release and push a tag
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # This step reads the version from client/package.json
+      - name: Get client version
+        id: get_version
+        run: echo "VERSION=$(jq -r .version client/package.json)" >> $GITHUB_OUTPUT
+
+      # This step creates and pushes a Git tag like "client/v0.1.0"
+      - name: Create and Push Git Tag
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git tag "client/v${{ steps.get_version.outputs.VERSION }}"
+          git push origin "client/v${{ steps.get_version.outputs.VERSION }}"
+
+      # This step creates the GitHub Release from the tag
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: client/v${{ steps.get_version.outputs.VERSION }}
+          release_name: Client v${{ steps.get_version.outputs.VERSION }}
+          body: "Automated release for client version ${{ steps.get_version.outputs.VERSION }}."
+          draft: false
+          prerelease: false
