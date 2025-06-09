@@ -10,8 +10,7 @@
     "dev:server": "npm run dev --workspace=server",
     "build:client": "npm run build --workspace=client",
     "build:server": "npm run build --workspace=server",
-    "lint:client": "npm run lint --workspace=client",
-    "semantic-release": "semantic-release"
+    "lint:client": "npm run lint --workspace=client"
   },
   "release": {
     "branches": [
