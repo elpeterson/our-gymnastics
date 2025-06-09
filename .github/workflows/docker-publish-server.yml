@@ -1,11 +1,9 @@
 # Name of your workflow
 name: Build and Push Server Docker Image
 
-# Controls when the action will run
 on:
   push:
     branches: [ "main" ]
-    # Only run this workflow if files in the server directory change
     paths:
       - 'server/**'
       - '.github/workflows/docker-publish-server.yml'
@@ -34,7 +32,9 @@ jobs:
       - name: Build and push Server Image
         uses: docker/build-push-action@v4
         with:
-          # This is the critical change: set the context to the server directory
-          context: ./server
+          # Change 1: Use the monorepo root as the context
+          context: .
+          # Change 2: Specify the path to the Dockerfile
+          file: ./server/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/our-gymnastics-server:latest
