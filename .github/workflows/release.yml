@@ -8,14 +8,13 @@ jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # to create release (and write 'package.json')
-      issues: write # to post comments on issues/PRs
-      pull-requests: write # to post comments on issues/PRs
+      contents: write
+      issues: write
+      pull-requests: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          # This is required to analyze the full commit history
           fetch-depth: 0
 
       - name: Setup Node.js
@@ -26,7 +25,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      # This command is now changed to use the npm script
       - name: Run semantic-release
-        run: npx semantic-release-monorepo
+        run: npm run semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
