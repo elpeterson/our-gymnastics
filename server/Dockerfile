@@ -1,23 +1,30 @@
-# Step 1: Use the official Node.js 18 image as a base
+# Use a suitable Node.js version as a base image
 FROM node:18-alpine
 
-# Step 2: Set the working directory inside the container
-WORKDIR /usr/src/app
+# Set the working directory in the container
+WORKDIR /app
 
-# Step 3: Copy package.json and package-lock.json to the container
-COPY package*.json ./
+# ---- Monorepo-aware Dependency Installation ----
+# 1. Copy all package.json and package-lock.json files from the monorepo root
+# The first '.' refers to the monorepo root (the context)
+# The second '.' refers to the WORKDIR in the container
+COPY ./package.json ./package-lock.json* ./
+COPY ./server/package.json ./server/
+COPY ./client/package.json ./client/
 
-# Step 4: Install the application dependencies
+# 2. Install ALL monorepo dependencies
+# This leverages the hoisted node_modules folder for a smaller image
 RUN npm install
 
-# Step 5: Copy the rest of your application code into the container
+# ---- Application-specific Build ----
+# 3. Copy the server's source code into the WORKDIR
 COPY . .
 
-# Step 6: Compile the TypeScript code into JavaScript
-RUN npm run build
+# 4. Run the build script for the server workspace
+RUN npm run build --workspace=server
 
-# Step 7: Expose the port your server runs on (4000)
+# 5. Expose the port the server listens on
 EXPOSE 4000
 
-# Step 8: Define the command to run your application
-CMD [ "npm", "start" ]
+# 6. Set the command to run the application
+CMD [ "npm", "start", "--workspace=server" ]
