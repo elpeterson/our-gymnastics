@@ -11,15 +11,7 @@
     "build:client": "npm run build --workspace=client",
     "build:server": "npm run build --workspace=server",
     "lint:client": "npm run lint --workspace=client",
-    "semantic-release": "semantic-release-monorepo"
-  },
-  "devDependencies": {
-    "@semantic-release/commit-analyzer": "^13.0.1",
-    "@semantic-release/git": "^10.0.1",
-    "@semantic-release/github": "^11.0.3",
-    "@semantic-release/release-notes-generator": "^14.0.3",
-    "semantic-release": "^24.2.5",
-    "semantic-release-monorepo": "^8.0.2"
+    "semantic-release": "semantic-release"
   },
   "release": {
     "branches": [
@@ -40,7 +32,8 @@
           ],
           "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
         }
-      ]
+      ],
+      "semantic-release-monorepo"
     ]
-}
+  }
 }
