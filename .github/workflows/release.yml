@@ -20,16 +20,15 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          # This is the line to change from '18' to '20'
+          node-version: '20'
 
       - name: Install dependencies
         run: npm ci
 
-      # New diagnostic step to see what's installed
       - name: Verify Installation
         run: ls -la ./node_modules/.bin
 
-      # Updated command to run the local executable directly
       - name: Run semantic-release
         run: ./node_modules/.bin/semantic-release
         env:
