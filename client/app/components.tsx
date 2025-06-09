@@ -91,3 +91,34 @@ export function GymnastScores() {
     </div>
   );
 }
+
+// 3. New Query and Component for Sterling Gym gymnasts
+const GET_STERLING_GYMNASTS = gql`
+  query GetSterlingGymnasts {
+    gymnastsByClub(clubId: 24029) {
+      gymnastId
+      firstName
+      lastName
+    }
+  }
+`;
+
+export function SterlingGymnastList() {
+  const { loading, error, data } = useQuery(GET_STERLING_GYMNASTS);
+
+  if (loading) return <p>Loading Sterling gymnasts...</p>;
+  if (error) return <p>Error loading gymnasts: {error.message}</p>;
+
+  return (
+    <div className="w-full p-4 border rounded-lg">
+      <h1 className="text-2xl font-bold mb-4">Sterling Gym Roster</h1>
+      <ul className="list-disc pl-5">
+        {data?.gymnastsByClub.map((gymnast: any) => (
+          <li key={gymnast.gymnastId} className="mb-1">
+            {gymnast.firstName} {gymnast.lastName} (ID: {gymnast.gymnastId})
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
