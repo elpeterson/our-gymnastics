@@ -1,5 +1,5 @@
-# Use a suitable Node.js version as a base image
-FROM node:18-alpine
+# CORRECTED: Use the 'slim' variant for better compatibility
+FROM node:18-slim
 
 # Set the working directory in the container
 WORKDIR /app
@@ -9,12 +9,10 @@ COPY package.json package-lock.json* ./
 COPY client/package.json ./client/
 COPY server/package.json ./server/
 
-# Install all monorepo dependencies
-RUN npm install
+# CORRECTED: Use 'npm ci' for reliable CI builds
+RUN npm ci
 
 # Copy only the server's source code
-# This copies the content of your local `server` directory
-# into a `server` directory inside the Docker image's WORKDIR.
 COPY server/ ./server/
 
 # Build the server application
