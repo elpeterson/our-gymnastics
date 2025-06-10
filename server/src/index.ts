@@ -142,6 +142,7 @@ const typeDefs = `#graphql
     program: ProgramType
     sessions: [Session]
     gymnasts: [Gymnast]
+    scores(gymnastId: Int): [Score]
   }
 
   type Session {
@@ -693,7 +694,6 @@ const resolvers = {
     },
   },
 
-  // --- Field Resolvers for nested data ---
   Sanction: {
     program: (sanction) => mapProgramIdToEnum(sanction.program_id),
     meetStatus: (sanction) => sanction.meet_status,
@@ -705,8 +705,7 @@ const resolvers = {
                 g.first_name AS "firstName",
                 g.last_name AS "lastName",
                 g.gender,
-                g.club_id,
-                sg.club_id_for_meet
+                sg.club_id_for_meet -- Use the historical club ID from the join table
             FROM gymnasts g
             JOIN sanction_gymnasts sg ON g.gymnast_id = sg.gymnast_id
             WHERE sg.sanction_id = $1;
@@ -720,6 +719,33 @@ const resolvers = {
         'SELECT session_id AS "sessionId", sanction_id AS "sanctionId", name, session_date AS "sessionDate", program FROM sessions WHERE sanction_id = $1',
         [sanction.sanctionId]
       );
+      return res.rows;
+    },
+    // Add the new resolver for scores
+    scores: async (sanction, { gymnastId }) => {
+      let query = `
+        SELECT
+            sc.score_id AS "scoreId",
+            sc.event_id AS "eventId",
+            sc.final_score AS "finalScore",
+            sc.rank,
+            sc.tie,
+            sc.gymnast_id,
+            sess.program
+        FROM scores sc
+        JOIN result_sets rs ON sc.result_set_id = rs.result_set_id
+        JOIN sessions sess ON rs.session_id = sess.session_id AND rs.sanction_id = sess.sanction_id
+        WHERE rs.sanction_id = $1
+      `;
+      const params = [sanction.sanctionId];
+
+      if (gymnastId) {
+        query += ` AND sc.gymnast_id = $2`;
+        params.push(gymnastId);
+      }
+
+      query += ` ORDER BY sc.gymnast_id, sc.event_id;`;
+      const res = await pool.query(query, params);
       return res.rows;
     },
   },
