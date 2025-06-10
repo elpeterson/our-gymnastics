@@ -1,110 +1,131 @@
 # Our Gymnastics
 
-Welcome to Our Gymnastics, a full-stack application designed to fetch, cache, and display gymnastics meet data from the MyUSAGym API. This project is architected as a monorepo, containing a GraphQL server that acts as an intelligent, persistent cache, and a Next.js client for data visualization.
+Welcome to Our Gymnastics, a modern web application for searching and viewing information about competitive gymnasts and gymnastics clubs. This project provides a streamlined interface to quickly find data sourced from the USAG API.
+
+## Features
+
+-   **Unified Search**: A central, type-ahead search bar to find gymnasts and clubs quickly.
+-   **Gymnast Profiles**: Detailed pages for each gymnast, including their basic information and a complete history of their sanctioned competition participation.
+-   **Club Rosters**: Detailed pages for each club, including their location and a full roster of their gymnasts, conveniently grouped by discipline and level.
+-   **Automated CI/CD**: The project is configured with GitHub Actions for automated testing, versioning with Semantic Release, and Docker image publishing to GitHub Container Registry.
 
 ## Tech Stack
 
-* **Monorepo:** npm Workspaces
-* **Backend:**
-    * Node.js, TypeScript
-    * Apollo Server (GraphQL)
-    * PostgreSQL
-    * Docker
-* **Frontend:**
-    * Next.js, React, TypeScript
-    * Tailwind CSS
-    * Apollo Client
-    * Docker
-* **CI/CD & Automation:**
-    * GitHub Actions
-    * `semantic-release` for automated versioning and releases
-    * Conventional Commits specification
-
-## Monorepo Structure
-
-This repository uses npm workspaces to manage the client and server packages.
-
-```
-/
-├── client/         # Next.js frontend application
-├── server/         # Apollo GraphQL server
-└── package.json    # Root package for managing workspaces
-```
+-   **Frontend**: Next.js, React, TypeScript, Apollo Client, Tailwind CSS
+-   **Backend**: Node.js, Apollo Server, GraphQL, TypeScript, PostgreSQL
+-   **DevOps**: Docker, GitHub Actions, Semantic Release
 
 ## Getting Started
 
 ### Prerequisites
 
-* Node.js (v20 or later)
-* npm (v8 or later)
-* Docker
-* A running PostgreSQL database
+-   [Node.js](https://nodejs.org/) (v20 or later)
+-   [Docker](https://www.docker.com/) and Docker Compose
+-   A running PostgreSQL instance
 
-### Local Setup
+### Installation & Setup
 
 1.  **Clone the repository:**
     ```bash
-    git clone <your-repo-url>
+    git clone [https://github.com/elpeterson/our-gymnastics.git](https://github.com/elpeterson/our-gymnastics.git)
     cd our-gymnastics
     ```
 
-2.  **Install dependencies:**
-    From the root directory, run `npm install`. This will install all dependencies for both the `client` and `server` workspaces.
+2.  **Install dependencies:** This is a monorepo, so you'll need to install dependencies in the root, client, and server directories.
     ```bash
     npm install
+    npm install --prefix client
+    npm install --prefix server
     ```
 
-3.  **Set up the database:**
-    Ensure your PostgreSQL server is running and you have created a database for this project. You will need to execute a database schema to create the necessary tables.
+3.  **Configure Server Environment:** The server requires a connection to a PostgreSQL database. Create a `.env` file in the `server/` directory with your database credentials.
+    ```
+    # server/.env
+    DB_USER=your_postgres_user
+    DB_HOST=your_postgres_host
+    DB_DATABASE=your_postgres_db
+    DB_PASSWORD=your_postgres_password
+    DB_PORT=5432
+    ```
 
-4.  **Configure Environment Variables:**
-    The server requires database connection details. Create a `.env` file in the `server/` directory and add your connection variables.
-
-5.  **Run the development servers:**
-    You can run both the client and server concurrently from the root directory.
-    * **Start the server:**
+4.  **Run the application:**
+    -   To start the backend GraphQL server:
         ```bash
-        npm run dev:server
+        npm run dev --prefix server
         ```
-    * **Start the client:**
+    -   To start the frontend Next.js application:
         ```bash
-        npm run dev:client
+        npm run dev --prefix client
         ```
 
-## GraphQL API Reference
+    - The client will be available at `http://localhost:3000`.
+    - The server's GraphQL playground will be at `http://localhost:4000`.
 
-The server provides a GraphQL API with the following queries and mutations to interact with the gymnastics data.
+---
+
+## GraphQL API Documentation
+
+The backend exposes a GraphQL API for all data operations.
 
 ### Queries
 
-| Query                                             | Description                                                                              |
-| ------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `meets(status: String!): [Sanction]`              | Fetches a list of meets based on their status (e.g., "Complete", "Future").              |
-| `sanction(sanctionId: Int!): Sanction`             | Fetches the details of a single meet by its sanction ID.                                 |
-| `gymnast(gymnastId: Int!): Gymnast`                | Fetches the primary details for a single gymnast by their ID.                            |
-| `gymnastsByClub(clubId: Int!): [Gymnast]`          | Fetches a list of all gymnasts belonging to a specific club.                             |
-| `sanctionsByGymnast(gymnastId: Int!): [Sanction]`  | Fetches a list of all meets a specific gymnast has participated in.                        |
-| `scoresByGymnast(gymnastId: Int!): [Score]`        | Fetches all scores for a single gymnast across all meets.                                |
-| `scoresByGymnastAndEvent(gymnastId: Int!, eventId: String!): [Score]` | Fetches all scores for a specific event (e.g., Vault) for a single gymnast. |
+| Query                               | Description                                                                 |
+| ----------------------------------- | --------------------------------------------------------------------------- |
+| `search(term: String!)`             | Performs a type-ahead search for gymnasts and clubs. Returns a `SearchResult` union. |
+| `gymnast(gymnastId: Int!)`          | Fetches detailed information for a single gymnast.                          |
+| `club(clubId: Int!)`                | Fetches detailed information for a single club.                             |
+| `gymnastsByClub(clubId: Int!)`      | Retrieves a list of all gymnasts registered to a specific club.             |
+| `sanctionsByGymnast(gymnastId: Int!)`| Retrieves a list of all competitions a specific gymnast has participated in.  |
+| `scoresByGymnast(gymnastId: Int!)`  | Retrieves all scores for a specific gymnast across all competitions.        |
+| `meets(status: String!)`            | Fetches a list of meets by their status (e.g., `Complete`, `InProgress`).   |
+| `sanction(sanctionId: Int!)`        | Fetches detailed information for a single competition sanction.             |
 
 ### Mutations
 
-| Mutation                                          | Description                                                                                 |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `syncSanctionAndParticipants(sanctionId: Int!): Sanction` | Fetches full meet details from the MyUSAGym API and saves all related data to the database. |
-| `syncScores(resultSetId: Int!): [Score]`          | Fetches all scores for a specific competition group within a meet.                          |
-| `syncSterlingGymData: [Sanction]`                 | Finds and syncs all past meets that Sterling Gym participated in since September 2022.      |
+These mutations are primarily for administrative use to sync data from the USAG API into the local database.
 
-## Deployment
+| Mutation                                    | Description                                                                                                    |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `syncSanctionAndParticipants(sanctionId: Int!)`| Fetches and stores all data for a specific sanction, including clubs, gymnasts, and session details.            |
+| `syncScores(resultSetId: Int!)`             | Fetches and stores all scores for a given result set within a competition session.                             |
+| `syncSterlingGymData`                       | A specialized mutation to find and sync all meets that a specific club (Sterling Gym) has participated in.       |
 
-This repository is configured for fully automated versioning and deployment using `semantic-release` and GitHub Actions.
+### Example Queries
 
-1.  **Commits**: All commits to the `main` branch should follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification.
-2.  **Automated Release**: When commits with `feat` or `fix` types are pushed to `main`, a GitHub Actions workflow automatically:
-    * Determines the next version number for the affected package (`client` or `server`).
-    * Generates release notes based on the commit messages.
-    * Creates a new GitHub Release with a corresponding Git tag (e.g., `client@1.2.0` or `server@1.1.0`).
-3.  **Automated Docker Builds**: The creation of a new release triggers a separate workflow that:
-    * Builds a production-ready Docker image for the released package.
-    * Pushes the image to the GitHub Container Registry, tagged with the new version.
-4.  **Hosting**: The resulting Docker images can then be deployed to any container hosting environment, such as a local Unraid server.
+**Search for a gymnast or club:**
+```graphql
+query SearchQuery($term: String!) {
+  search(term: $term) {
+    ... on Gymnast {
+      __typename
+      gymnastId
+      firstName
+      lastName
+    }
+    ... on Club {
+      __typename
+      clubId
+      name
+      state
+    }
+  }
+}
+```
+
+**Get gymnast details and their competition history:**
+```graphql
+query GetGymnastDetails($gymnastId: Int!) {
+  gymnast(gymnastId: $gymnastId) {
+    firstName
+    lastName
+    gender
+    club {
+      name
+    }
+  }
+  sanctionsByGymnast(gymnastId: $gymnastId) {
+    sanctionId
+    name
+    startDate
+  }
+}
