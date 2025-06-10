@@ -1,21 +1,14 @@
-// app/page.tsx
-'use client';
-
-import {
-  GymnastDetails,
-  GymnastScores,
-  SterlingGymnastList,
-} from './components';
+import { Search } from './components/Search';
 
 export default function Home() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start w-full max-w-4xl">
-        <GymnastDetails />
-        <hr className="w-full border-t border-gray-300 dark:border-gray-700" />
-        <SterlingGymnastList />
-        <hr className="w-full border-t border-gray-300 dark:border-gray-700" />
-        <GymnastScores />
+    <div className="flex items-center justify-center min-h-screen">
+      <main className="w-full max-w-2xl px-4">
+        <h1 className="text-4xl font-bold text-center mb-2">Our Gymnastics</h1>
+        <p className="text-center text-gray-500 dark:text-gray-400 mb-8">
+          Search for Gymnasts and Clubs
+        </p>
+        <Search />
       </main>
     </div>
   );
