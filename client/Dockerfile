@@ -1,6 +1,8 @@
 # Stage 1: Install dependencies and build the application
-# Use the 'slim' variant for better compatibility with native modules
 FROM node:20-slim AS builder
+
+# Install system-level build tools required for some native Node modules
+RUN apt-get update && apt-get install -y build-essential python3 make
 
 # Set the working directory
 WORKDIR /app
@@ -20,12 +22,10 @@ COPY client/ ./client/
 RUN npm run build --workspace=client
 
 # Stage 2: Create the final production image
-# Use the 'slim' variant here as well
 FROM node:20-slim AS runner
 
 WORKDIR /app
 
-# Set NODE_ENV to production for the leanest possible image
 ENV NODE_ENV=production
 
 # Copy the built application from the 'builder' stage
@@ -33,8 +33,6 @@ COPY --from=builder /app/client/.next/standalone ./
 COPY --from=builder /app/client/.next/static ./client/.next/static
 COPY --from=builder /app/client/public ./client/public
 
-# Expose the port Next.js runs on
 EXPOSE 3000
 
-# Command to start the server
 CMD ["node", "client/server.js"]
