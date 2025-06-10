@@ -1,3 +1,4 @@
+// client/app/sanction/[sanctionId]/page.tsx
 'use client';
 
 import { gql, useQuery } from '@apollo/client';
@@ -36,6 +37,7 @@ const GET_SANCTION_DETAILS = gql`
   }
 `;
 
+// Define the type for a gymnast object
 interface Gymnast {
   gymnastId: number;
   firstName: string;
@@ -43,6 +45,18 @@ interface Gymnast {
   historicalClub: {
     clubId: number;
     name: string;
+  };
+}
+
+// Define the type for a score object
+interface Score {
+  eventName: string;
+  finalScore: number;
+  rank: number;
+  gymnast: {
+    gymnastId: number;
+    firstName: string;
+    lastName: string;
   };
 }
 
@@ -90,7 +104,7 @@ export default function SanctionPage() {
     return <div className="text-center p-10">Sanction not found.</div>;
 
   const { sanction } = data;
-  const scores = sanction.scores || [];
+  const scores: Score[] = sanction.scores || [];
 
   return (
     <div className="container mx-auto p-4 md:p-8">
@@ -147,7 +161,7 @@ export default function SanctionPage() {
                 </tr>
               </thead>
               <tbody>
-                {scores.map((score: any, index: number) => (
+                {scores.map((score: Score, index: number) => (
                   <tr
                     key={index}
                     className="border-b border-gray-200 dark:border-gray-700"
@@ -183,7 +197,7 @@ export default function SanctionPage() {
                       showClubs ? 'border border-t-0 rounded-b-lg' : ''
                     }`}
                   >
-                    {groupedByClub[clubName].map((gymnast) => (
+                    {groupedByClub[clubName].map((gymnast: Gymnast) => (
                       <li key={gymnast.gymnastId} className="my-1">
                         {gymnast.firstName} {gymnast.lastName}
                       </li>
