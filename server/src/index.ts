@@ -125,6 +125,7 @@ const typeDefs = `#graphql
     firstName: String!
     lastName: String!
     gender: String
+    level: String 
     club: Club # Represents the gymnast's primary/current club
     historicalClub: Club # Represents the club they competed for in a specific meet
   }
@@ -170,14 +171,19 @@ const typeDefs = `#graphql
     sanction: Sanction # Added field to link score to a sanction
   }
 
+  # Add Union type for mixed search reults
+  union SearchResult = Gymnast | Club
+
   type Query {
     meets(status: String!): [Sanction]
     sanction(sanctionId: Int!): Sanction
     gymnast(gymnastId: Int!): Gymnast
-    gymnastsByClub(clubId: Int!): [Gymnast] # New query
+    gymnastsByClub(clubId: Int!): [Gymnast]
     sanctionsByGymnast(gymnastId: Int!): [Sanction]
     scoresByGymnastAndEvent(gymnastId: Int!, eventId: String!): [Score]
     scoresByGymnast(gymnastId: Int!): [Score]
+    club(clubId: Int!): Club
+    search(term: String!): [SearchResult]
   }
 
   type Mutation {
@@ -418,6 +424,18 @@ async function syncSanctionInternal(sanctionId: number, client: pg.PoolClient) {
 
 // --- RESOLVERS ---
 const resolvers = {
+  SearchResult: {
+    __resolveType(obj, context, info) {
+      if (obj.firstName) {
+        return 'Gymnast';
+      }
+      if (obj.city) {
+        return 'Club';
+      }
+      return null; // Or throw an error
+    },
+  },
+
   Query: {
     meets: async (_, { status }) => {
       const res = await pool.query(
@@ -442,7 +460,18 @@ const resolvers = {
     },
     gymnastsByClub: async (_, { clubId }) => {
       const res = await pool.query(
-        'SELECT gymnast_id AS "gymnastId", first_name AS "firstName", last_name AS "lastName", gender, club_id FROM gymnasts WHERE club_id = $1 ORDER BY last_name, first_name',
+        `
+          SELECT
+            g.gymnast_id AS "gymnastId",
+            g.first_name AS "firstName",
+            g.last_name AS "lastName",
+            g.gender,
+            g.club_id,
+            (SELECT sg.level FROM sanction_gymnasts sg JOIN sanctions s ON sg.sanction_id = s.sanction_id WHERE sg.gymnast_id = g.gymnast_id ORDER BY s.start_date DESC LIMIT 1) as level
+          FROM gymnasts g
+          WHERE g.club_id = $1
+          ORDER BY last_name, first_name
+        `,
         [clubId]
       );
       return res.rows;
@@ -503,6 +532,32 @@ const resolvers = {
         [gymnastId]
       );
       return res.rows;
+    },
+    club: async (_, { clubId }) => {
+      const res = await pool.query(
+        'SELECT club_id AS "clubId", name, city, state FROM clubs WHERE club_id = $1',
+        [clubId]
+      );
+      return res.rows[0];
+    },
+    search: async (_, { term }) => {
+      if (!term || term.trim() === '') {
+        return [];
+      }
+
+      // Query for gymnasts
+      const gymnastRes = await pool.query(
+        'SELECT gymnast_id AS "gymnastId", first_name AS "firstName", last_name AS "lastName", gender, club_id FROM gymnasts WHERE first_name ILIKE $1 OR last_name ILIKE $1 LIMIT 5',
+        [`%${term}%`]
+      );
+
+      // Query for clubs
+      const clubRes = await pool.query(
+        'SELECT club_id AS "clubId", name, city, state FROM clubs WHERE name ILIKE $1 LIMIT 5',
+        [`%${term}%`]
+      );
+
+      return [...gymnastRes.rows, ...clubRes.rows];
     },
   },
 
@@ -669,6 +724,7 @@ const resolvers = {
     },
   },
   Gymnast: {
+    level: (gymnast) => gymnast.level || 'N/A',
     club: async (gymnast) => {
       if (!gymnast.club_id) return null;
       const res = await pool.query(
