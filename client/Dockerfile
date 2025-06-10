@@ -1,9 +1,6 @@
 # Stage 1: Install dependencies and build the application
 FROM node:22-alpine AS builder
 
-# Install system-level build tools required for some native Node modules
-RUN apt-get update && apt-get install -y build-essential python3 make
-
 # Set the working directory
 WORKDIR /app
 
