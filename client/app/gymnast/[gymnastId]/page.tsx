@@ -2,6 +2,7 @@
 
 import { gql, useQuery } from '@apollo/client';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 
 const GET_GYMNAST_DETAILS_AND_SANCTIONS = gql`
   query GetGymnastDetailsAndSanctions($gymnastId: Int!) {
@@ -59,16 +60,17 @@ export default function GymnastPage() {
         {sanctionsByGymnast && sanctionsByGymnast.length > 0 ? (
           <ul className="space-y-4">
             {sanctionsByGymnast.map((sanction: any) => (
-              <li
+              <Link
                 key={sanction.sanctionId}
-                className="p-4 border rounded-lg bg-gray-50 dark:bg-gray-800"
+                href={`/sanction/${sanction.sanctionId}?filter_gymnast_id=${gymnastId}`}
+                className="block p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
               >
                 <p className="font-semibold text-lg">{sanction.name}</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   Date:{' '}
                   {new Date(parseInt(sanction.startDate)).toLocaleDateString()}
                 </p>
-              </li>
+              </Link>
             ))}
           </ul>
         ) : (
