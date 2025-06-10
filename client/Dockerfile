@@ -1,5 +1,6 @@
 # Stage 1: Install dependencies and build the application
-FROM node:20-alpine AS builder
+# Use the 'slim' variant for better compatibility with native modules
+FROM node:20-slim AS builder
 
 # Set the working directory
 WORKDIR /app
@@ -19,7 +20,8 @@ COPY client/ ./client/
 RUN npm run build --workspace=client
 
 # Stage 2: Create the final production image
-FROM node:20-alpine AS runner
+# Use the 'slim' variant here as well
+FROM node:20-slim AS runner
 
 WORKDIR /app
 
