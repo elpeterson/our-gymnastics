@@ -2,7 +2,7 @@ import { ApolloClient, InMemoryCache } from "@apollo/client";
 
 const client = new ApolloClient({
   // uri: 'http://localhost:4000',
-  uri: 'https://server.elpeterson.com',
+  uri: 'https://api.elpeterson.com',
   cache: new InMemoryCache(),
 });
 
