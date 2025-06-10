@@ -35,4 +35,5 @@ COPY --from=builder /app/client/public ./client/public
 
 EXPOSE 3000
 
-CMD ["node", "client/server.js"]
+# CORRECTED: The standalone output places server.js at the root of the WORKDIR
+CMD ["node", "server.js"]
