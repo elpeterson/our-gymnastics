@@ -9,15 +9,16 @@ COPY package.json package-lock.json* ./
 COPY client/package.json ./client/
 COPY server/package.json ./server/
 
-# CORRECTED: Use 'npm ci' for reliable CI builds
+# Use 'npm ci' for reliable CI builds
 RUN npm ci
 
 # Copy only the server's source code
 COPY server/ ./server/
 
 # Build the server application
-RUN npm run build --workspace=server
+RUN npm run build:server
 
+# Expose port 4000 to allow traffic to the application
 EXPOSE 4000
 
 # The start script in server/package.json runs the compiled code from dist/
