@@ -1,5 +1,5 @@
 # Stage 1: Install dependencies and build the application
-FROM node:20-slim AS builder
+FROM node:22-alpine AS builder
 
 # Install system-level build tools required for some native Node modules
 RUN apt-get update && apt-get install -y build-essential python3 make
@@ -22,7 +22,7 @@ COPY client/ ./client/
 RUN npm run build --workspace=client
 
 # Stage 2: Create the final production image
-FROM node:20-slim AS runner
+FROM node:22-alpine AS runner
 
 WORKDIR /app
 
