@@ -6,6 +6,7 @@ on:
 
 jobs:
   build_and_push:
+    # Only run this job if the release tag starts with 'server@'
     if: startsWith(github.event.release.tag_name, 'server@')
     runs-on: ubuntu-latest
     permissions:
@@ -16,7 +17,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # This step is now corrected to use valid syntax
       - name: Extract version from tag
         id: get_version
         run: |
