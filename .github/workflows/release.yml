@@ -1,42 +1,111 @@
-name: Create Release
+# .github/workflows/release.yml
+name: Release Client or Server
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
 
 jobs:
-  release-client:
+  check_changes:
+    name: Check for file changes
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      issues: write
-      pull-requests: write
+    outputs:
+      client-changed: ${{ steps.filter.outputs.client }}
+      server-changed: ${{ steps.filter.outputs.server }}
     steps:
       - uses: actions/checkout@v3
-        with: { fetch-depth: 0 }
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            client:
+              - 'client/**'
+            server:
+              - 'server/**'
+
+  release_client:
+    name: Create Client Release
+    needs: check_changes
+    if: needs.check_changes.outputs.client-changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
-        with: { node-version: '20' }
-      - run: npm ci
-      - name: Release Client
-        run: npx semantic-release
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm install
+      - name: Release client
         working-directory: ./client
+        run: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
-  release-server:
+  release_server:
+    name: Create Server Release
+    needs: check_changes
+    if: needs.check_changes.outputs.server-changed == 'true'
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      issues: write
-      pull-requests: write
     steps:
       - uses: actions/checkout@v3
-        with: { fetch-depth: 0 }
       - uses: actions/setup-node@v3
-        with: { node-version: '20' }
-      - run: npm ci
-      - name: Release Server
-        run: npx semantic-release
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm install
+      - name: Release server
         working-directory: ./server
+        run: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+  build_push_client:
+    name: Build and Push Client Image
+    needs: release_client
+    # This job will only run if a client release was created
+    if: needs.release_client.conclusion == 'success' && needs.release_client.outputs.new_release_published == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v3
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_TOKEN }}
+      - name: Build and push Client Image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./client/Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/our-gymnastics-client:${{ needs.release_client.outputs.new_release_version }}
+
+  build_push_server:
+    name: Build and Push Server Image
+    needs: release_server
+    # This job will only run if a server release was created
+    if: needs.release_server.conclusion == 'success' && needs.release_server.outputs.new_release_published == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v3
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_TOKEN }}
+      - name: Build and push Server Image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./server/Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/our-gymnastics-server:${{ needs.release_server.outputs.new_release_version }}
