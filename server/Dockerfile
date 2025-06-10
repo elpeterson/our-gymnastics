@@ -1,5 +1,5 @@
 # CORRECTED: Use the 'slim' variant for better compatibility
-FROM node:18-slim
+FROM node:22-alpine
 
 # Set the working directory in the container
 WORKDIR /app
