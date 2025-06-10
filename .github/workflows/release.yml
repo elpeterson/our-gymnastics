@@ -7,8 +7,6 @@ on:
 jobs:
   release-client:
     runs-on: ubuntu-latest
-    # This job only runs if changes were made in the 'client' directory
-    if: "contains(github.event.head_commit.message, 'feat(client)') || contains(github.event.head_commit.message, 'fix(client)')"
     permissions:
       contents: write
       issues: write
@@ -26,8 +24,6 @@ jobs:
 
   release-server:
     runs-on: ubuntu-latest
-    # This job only runs if changes were made in the 'server' directory
-    if: "contains(github.event.head_commit.message, 'feat(server)') || contains(github.event.head_commit.message, 'fix(server)')"
     permissions:
       contents: write
       issues: write

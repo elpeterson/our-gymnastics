@@ -79,6 +79,7 @@ const typeDefs = `#graphql
     meets(status: String!): [Sanction]
     sanction(sanctionId: Int!): Sanction
     gymnast(gymnastId: Int!): Gymnast
+    gymnastsByClub(clubId: Int!): [Gymnast] # New query
     sanctionsByGymnast(gymnastId: Int!): [Sanction]
     scoresByGymnastAndEvent(gymnastId: Int!, eventId: String!): [Score]
     scoresByGymnast(gymnastId: Int!): [Score]
@@ -285,6 +286,10 @@ const resolvers = {
         gymnast: async (_, { gymnastId }) => {
             const res = await pool.query('SELECT gymnast_id AS "gymnastId", first_name AS "firstName", last_name AS "lastName", gender, club_id FROM gymnasts WHERE gymnast_id = $1', [gymnastId]);
             return res.rows[0];
+        },
+        gymnastsByClub: async (_, { clubId }) => {
+            const res = await pool.query('SELECT gymnast_id AS "gymnastId", first_name AS "firstName", last_name AS "lastName", gender, club_id FROM gymnasts WHERE club_id = $1 ORDER BY last_name, first_name', [clubId]);
+            return res.rows;
         },
         sanctionsByGymnast: async (_, { gymnastId }) => {
             const res = await pool.query(`
