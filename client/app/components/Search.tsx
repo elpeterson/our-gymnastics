@@ -1,5 +1,5 @@
 'use client';
-
+//trigger client
 import { useState } from 'react';
 import { gql, useLazyQuery } from '@apollo/client';
 import { useRouter } from 'next/navigation';
