@@ -15,6 +15,9 @@ jobs:
       server-changed: ${{ steps.filter.outputs.server }}
     steps:
       - uses: actions/checkout@v3
+        with:
+          # Required for semantic-release to analyze the commit history
+          fetch-depth: 0
       - uses: dorny/paths-filter@v2
         id: filter
         with:
@@ -29,16 +32,25 @@ jobs:
     needs: check_changes
     if: needs.check_changes.outputs.client-changed == 'true'
     runs-on: ubuntu-latest
+    outputs:
+      new_release_published: ${{ steps.semantic.outputs.new_release_published }}
+      new_release_version: ${{ steps.semantic.outputs.new_release_version }}
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v3
         with:
           node-version: '20'
-      - name: Install dependencies
+      - name: Install root dependencies
         run: npm install
+      - name: Install client dependencies
+        run: npm install --prefix client
       - name: Release client
-        working-directory: ./client
-        run: npx semantic-release
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          working_directory: ./client
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
@@ -47,24 +59,32 @@ jobs:
     needs: check_changes
     if: needs.check_changes.outputs.server-changed == 'true'
     runs-on: ubuntu-latest
+    outputs:
+      new_release_published: ${{ steps.semantic.outputs.new_release_published }}
+      new_release_version: ${{ steps.semantic.outputs.new_release_version }}
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v3
         with:
           node-version: '20'
-      - name: Install dependencies
+      - name: Install root dependencies
         run: npm install
+      - name: Install server dependencies
+        run: npm install --prefix server
       - name: Release server
-        working-directory: ./server
-        run: npx semantic-release
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          working_directory: ./server
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
   build_push_client:
     name: Build and Push Client Image
     needs: release_client
-    # This job will only run if a client release was created
-    if: needs.release_client.conclusion == 'success' && needs.release_client.outputs.new_release_published == 'true'
+    if: needs.release_client.outputs.new_release_published == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -88,8 +108,7 @@ jobs:
   build_push_server:
     name: Build and Push Server Image
     needs: release_server
-    # This job will only run if a server release was created
-    if: needs.release_server.conclusion == 'success' && needs.release_server.outputs.new_release_published == 'true'
+    if: needs.release_server.outputs.new_release_published == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
