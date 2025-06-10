@@ -1,3 +1,5 @@
+// Trigger server release
+
 import { ApolloServer } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
 import pg from 'pg';
