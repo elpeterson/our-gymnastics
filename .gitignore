@@ -5,8 +5,14 @@
 
 # Build outputs
 /dist
+/client/dist
+/server/dist
 /build
+/client/build
+/server/build
 /.next/
+/client/.next/
+/server/.next/
 /out/
 
 # Logs
@@ -31,6 +37,3 @@ next-env.d.ts
 # Editor directories
 .vscode/
 .idea/
-
-# Environment variables
-server/.env
