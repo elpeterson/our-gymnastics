@@ -1,17 +1,23 @@
 import { ApolloServer } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
 import pg from 'pg';
-const { Pool } = pg;
 import fetch from 'node-fetch';
+import dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
+
+const { Pool } = pg;
 
 // --- DATABASE SETUP ---
 const pool = new Pool({
-  user: 'quorra_postgres',
-  host: '192.168.1.100',
-  database: 'gymnastics',
-  password: 'Five-Worshiper-Wildland8',
-  port: 5432,
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_DATABASE,
+  password: process.env.DB_PASSWORD,
+  port: parseInt(process.env.DB_PORT || '5432', 10),
 });
+
 pool.on('connect', () => console.log('🎉 Database connected'));
 pool.on('error', (err) =>
   console.error('🔥 Database connection error', err.stack)

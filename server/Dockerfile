@@ -1,25 +1,36 @@
-# CORRECTED: Use the 'slim' variant for better compatibility
-FROM node:22-alpine
-
-# Set the working directory in the container
+# ===== Builder Stage =====
+FROM node:22-alpine AS builder
 WORKDIR /app
-
-# Copy all package manifests to leverage Docker cache
-COPY package.json package-lock.json* ./
-COPY client/package.json ./client/
+COPY package.json package-lock.json ./
 COPY server/package.json ./server/
-
-# Use 'npm ci' for reliable CI builds
-RUN npm ci
-
-# Copy only the server's source code
+RUN npm install
 COPY server/ ./server/
+COPY tsconfig.json ./
+RUN npm run build --filter=our-gymnastics-server
 
-# Build the server application
-RUN npm run build:server
+# ===== Runner Stage =====
+FROM node:22-alpine
+WORKDIR /app
+ENV NODE_ENV=production
 
-# Expose port 4000 to allow traffic to the application
+# --- Add ARG for each secret ---
+ARG DB_USER
+ARG DB_HOST
+ARG DB_DATABASE
+ARG DB_PASSWORD
+ARG DB_PORT
+
+# --- Expose ARG as ENV inside the container ---
+ENV DB_USER=$DB_USER
+ENV DB_HOST=$DB_HOST
+ENV DB_DATABASE=$DB_DATABASE
+ENV DB_PASSWORD=$DB_PASSWORD
+ENV DB_PORT=$DB_PORT
+
+COPY --from=builder /app/server/dist ./server/dist
+COPY --from=builder /app/package.json /app/package-lock.json ./
+COPY --from=builder /app/server/package.json ./server/
+RUN npm install --production --prefix server
+
 EXPOSE 4000
-
-# The start script in server/package.json runs the compiled code from dist/
-CMD [ "npm", "start", "--workspace=server" ]
+CMD ["npm", "start", "--", "--prefix", "server"]
