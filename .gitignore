@@ -31,3 +31,6 @@ next-env.d.ts
 # Editor directories
 .vscode/
 .idea/
+
+# Environment variables
+server/.env
