@@ -24,8 +24,7 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Env files
-.env*
-*.local
+/server/.env
 
 # Misc
 .DS_Store
