@@ -103,7 +103,9 @@ jobs:
           context: .
           file: ./client/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/our-gymnastics-client:${{ needs.release_client.outputs.new_release_version }}
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/our-gymnastics-client:${{ needs.release_client.outputs.new_release_version }}
+            ghcr.io/${{ github.repository_owner }}/our-gymnastics-client:latest
 
   build_push_server:
     name: Build and Push Server Image
@@ -127,4 +129,6 @@ jobs:
           context: .
           file: ./server/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/our-gymnastics-server:${{ needs.release_server.outputs.new_release_version }}
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/our-gymnastics-server:${{ needs.release_server.outputs.new_release_version }}
+            ghcr.io/${{ github.repository_owner }}/our-gymnastics-server:latest
