@@ -1,15 +1,18 @@
 import { ApolloServer } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
 import pg from 'pg';
-const { Pool } = pg;
 import fetch from 'node-fetch';
+import dotenv from 'dotenv';
+// Load environment variables from .env file
+dotenv.config();
+const { Pool } = pg;
 // --- DATABASE SETUP ---
 const pool = new Pool({
-    user: 'quorra_postgres',
-    host: '192.168.1.100',
-    database: 'gymnastics',
-    password: 'Five-Worshiper-Wildland8',
-    port: 5432,
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
+    database: process.env.DB_DATABASE,
+    password: process.env.DB_PASSWORD,
+    port: parseInt(process.env.DB_PORT || '5432', 10),
 });
 pool.on('connect', () => console.log('🎉 Database connected'));
 pool.on('error', (err) => console.error('🔥 Database connection error', err.stack));
@@ -30,6 +33,7 @@ const typeDefs = `#graphql
     firstName: String!
     lastName: String!
     gender: String
+    level: String 
     club: Club # Represents the gymnast's primary/current club
     historicalClub: Club # Represents the club they competed for in a specific meet
   }
@@ -46,6 +50,7 @@ const typeDefs = `#graphql
     program: ProgramType
     sessions: [Session]
     gymnasts: [Gymnast]
+    scores(gymnastId: Int): [Score]
   }
 
   type Session {
@@ -75,14 +80,19 @@ const typeDefs = `#graphql
     sanction: Sanction # Added field to link score to a sanction
   }
 
+  # Add Union type for mixed search reults
+  union SearchResult = Gymnast | Club
+
   type Query {
     meets(status: String!): [Sanction]
     sanction(sanctionId: Int!): Sanction
     gymnast(gymnastId: Int!): Gymnast
-    gymnastsByClub(clubId: Int!): [Gymnast] # New query
+    gymnastsByClub(clubId: Int!): [Gymnast]
     sanctionsByGymnast(gymnastId: Int!): [Sanction]
     scoresByGymnastAndEvent(gymnastId: Int!, eventId: String!): [Score]
     scoresByGymnast(gymnastId: Int!): [Score]
+    club(clubId: Int!): Club
+    search(term: String!): [SearchResult]
   }
 
   type Mutation {
@@ -274,6 +284,17 @@ async function syncSanctionInternal(sanctionId, client) {
 }
 // --- RESOLVERS ---
 const resolvers = {
+    SearchResult: {
+        __resolveType(obj, context, info) {
+            if (obj.firstName) {
+                return 'Gymnast';
+            }
+            if (obj.city) {
+                return 'Club';
+            }
+            return null; // Or throw an error
+        },
+    },
     Query: {
         meets: async (_, { status }) => {
             const res = await pool.query('SELECT sanction_id AS "sanctionId", name, start_date AS "startDate", end_date AS "endDate", city, state, site_name AS "siteName", meet_status, program_id FROM sanctions WHERE meet_status = $1', [status]);
@@ -288,7 +309,18 @@ const resolvers = {
             return res.rows[0];
         },
         gymnastsByClub: async (_, { clubId }) => {
-            const res = await pool.query('SELECT gymnast_id AS "gymnastId", first_name AS "firstName", last_name AS "lastName", gender, club_id FROM gymnasts WHERE club_id = $1 ORDER BY last_name, first_name', [clubId]);
+            const res = await pool.query(`
+          SELECT
+            g.gymnast_id AS "gymnastId",
+            g.first_name AS "firstName",
+            g.last_name AS "lastName",
+            g.gender,
+            g.club_id,
+            (SELECT sg.level FROM sanction_gymnasts sg JOIN sanctions s ON sg.sanction_id = s.sanction_id WHERE sg.gymnast_id = g.gymnast_id ORDER BY s.start_date DESC LIMIT 1) as level
+          FROM gymnasts g
+          WHERE g.club_id = $1
+          ORDER BY last_name, first_name
+        `, [clubId]);
             return res.rows;
         },
         sanctionsByGymnast: async (_, { gymnastId }) => {
@@ -338,6 +370,20 @@ const resolvers = {
             ORDER BY sess.session_date DESC, sc.event_id;
         `, [gymnastId]);
             return res.rows;
+        },
+        club: async (_, { clubId }) => {
+            const res = await pool.query('SELECT club_id AS "clubId", name, city, state FROM clubs WHERE club_id = $1', [clubId]);
+            return res.rows[0];
+        },
+        search: async (_, { term }) => {
+            if (!term || term.trim() === '') {
+                return [];
+            }
+            // Query for gymnasts
+            const gymnastRes = await pool.query('SELECT gymnast_id AS "gymnastId", first_name AS "firstName", last_name AS "lastName", gender, club_id FROM gymnasts WHERE first_name ILIKE $1 OR last_name ILIKE $1 LIMIT 5', [`%${term}%`]);
+            // Query for clubs
+            const clubRes = await pool.query('SELECT club_id AS "clubId", name, city, state FROM clubs WHERE name ILIKE $1 LIMIT 5', [`%${term}%`]);
+            return [...gymnastRes.rows, ...clubRes.rows];
         },
     },
     Mutation: {
@@ -439,7 +485,6 @@ const resolvers = {
             }
         },
     },
-    // --- Field Resolvers for nested data ---
     Sanction: {
         program: (sanction) => mapProgramIdToEnum(sanction.program_id),
         meetStatus: (sanction) => sanction.meet_status,
@@ -450,8 +495,7 @@ const resolvers = {
                 g.first_name AS "firstName",
                 g.last_name AS "lastName",
                 g.gender,
-                g.club_id,
-                sg.club_id_for_meet
+                sg.club_id_for_meet -- Use the historical club ID from the join table
             FROM gymnasts g
             JOIN sanction_gymnasts sg ON g.gymnast_id = sg.gymnast_id
             WHERE sg.sanction_id = $1;
@@ -462,8 +506,34 @@ const resolvers = {
             const res = await pool.query('SELECT session_id AS "sessionId", sanction_id AS "sanctionId", name, session_date AS "sessionDate", program FROM sessions WHERE sanction_id = $1', [sanction.sanctionId]);
             return res.rows;
         },
+        // Add the new resolver for scores
+        scores: async (sanction, { gymnastId }) => {
+            let query = `
+        SELECT
+            sc.score_id AS "scoreId",
+            sc.event_id AS "eventId",
+            sc.final_score AS "finalScore",
+            sc.rank,
+            sc.tie,
+            sc.gymnast_id,
+            sess.program
+        FROM scores sc
+        JOIN result_sets rs ON sc.result_set_id = rs.result_set_id
+        JOIN sessions sess ON rs.session_id = sess.session_id AND rs.sanction_id = sess.sanction_id
+        WHERE rs.sanction_id = $1
+      `;
+            const params = [sanction.sanctionId];
+            if (gymnastId) {
+                query += ` AND sc.gymnast_id = $2`;
+                params.push(gymnastId);
+            }
+            query += ` ORDER BY sc.gymnast_id, sc.event_id;`;
+            const res = await pool.query(query, params);
+            return res.rows;
+        },
     },
     Gymnast: {
+        level: (gymnast) => gymnast.level || 'N/A',
         club: async (gymnast) => {
             if (!gymnast.club_id)
                 return null;
