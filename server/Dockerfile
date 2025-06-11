@@ -1,12 +1,15 @@
 # ===== Builder Stage =====
 FROM node:22-alpine AS builder
 WORKDIR /app
+
 COPY package.json package-lock.json ./
 COPY server/package.json ./server/
-RUN npm install
+
+RUN npm ci
+
 COPY server/ ./server/
-COPY tsconfig.json ./
-RUN npm run build --filter=our-gymnastics-server
+
+RUN npm run build:server
 
 # ===== Runner Stage =====
 FROM node:22-alpine
@@ -33,4 +36,4 @@ COPY --from=builder /app/server/package.json ./server/
 RUN npm install --production --prefix server
 
 EXPOSE 4000
-CMD ["npm", "start", "--", "--prefix", "server"]
+CMD ["npm", "start", "--workspace=server" ]
