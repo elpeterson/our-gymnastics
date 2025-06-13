@@ -5,14 +5,11 @@
 
 # Build outputs
 /dist
-/client/dist
-/server/dist
+**/dist
 /build
-/client/build
-/server/build
+**/build
 /.next/
-/client/.next/
-/server/.next/
+**/.next/
 /out/
 
 # Logs
@@ -24,7 +21,8 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Env files
-/server/.env
+**/.env
+**/.env.*
 
 # Misc
 .DS_Store

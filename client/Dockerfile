@@ -29,6 +29,10 @@ WORKDIR /app
 # Set the environment to production
 ENV NODE_ENV=production
 
+# --- Add ARG for each secret ---
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 # Copy the built Next.js app from the builder stage
 COPY --from=builder /app/client/.next ./client/.next
 COPY --from=builder /app/client/public ./client/public

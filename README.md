@@ -31,11 +31,9 @@ Welcome to Our Gymnastics, a modern web application for searching and viewing in
     cd our-gymnastics
     ```
 
-2.  **Install dependencies:** This is a monorepo, so you'll need to install dependencies in the root, client, and server directories.
+2.  **Install dependencies:** This is a monorepo, so you'll need to install dependencies in the root, this will also install dependencies for client and server.
     ```bash
     npm install
-    npm install --prefix client
-    npm install --prefix server
     ```
 
 3.  **Configure Server Environment:** The server requires a connection to a PostgreSQL database. Create a `.env` file in the `server/` directory with your database credentials.
@@ -51,11 +49,11 @@ Welcome to Our Gymnastics, a modern web application for searching and viewing in
 4.  **Run the application:**
     -   To start the backend GraphQL server:
         ```bash
-        npm run dev --prefix server
+        npm run dev:server
         ```
     -   To start the frontend Next.js application:
         ```bash
-        npm run dev --prefix client
+        npm run dev:client
         ```
 
     - The client will be available at `http://localhost:3000`.
